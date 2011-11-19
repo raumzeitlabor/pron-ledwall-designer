@@ -1,6 +1,7 @@
 package de.raumzeitlabor.pr0nwall.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -21,7 +22,7 @@ public class Statusbar extends JPanel {
 
 	public Statusbar() {
 		setLayout(new BorderLayout());
-
+		
 		statuslabel = new JLabel();
 		statuslabel.setText("Ready.");
 		add(statuslabel, BorderLayout.WEST);
@@ -29,6 +30,10 @@ public class Statusbar extends JPanel {
 		progressbar = new JProgressBar();
 		add(progressbar, BorderLayout.EAST);
 		
-		setBorder(new EmptyBorder(3, 3, 3, 3));
+//		setBorder(new EmptyBorder(3, 3, 3, 3));
+		setBorder(new CompoundBorder(BorderFactory.createMatteBorder(
+                1, 0, 0, 0, Color.gray),
+                new EmptyBorder(3, 3, 3, 3)));
+//		setBorder(BorderFactory.createRaisedBevelBorder());
 	}
 }

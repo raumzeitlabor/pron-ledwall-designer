@@ -2,6 +2,7 @@ package de.raumzeitlabor.pr0nwall.gui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -13,7 +14,7 @@ import java.awt.geom.Ellipse2D;
 
 import javax.swing.JComponent;
 
-public class LED extends JComponent implements MouseListener {
+public class LED extends JComponent implements MouseListener, MouseMotionListener {
 
 	/**
 	 * 
@@ -29,6 +30,7 @@ public class LED extends JComponent implements MouseListener {
 	public LED(LEDPanel parent) {
 		ledpanel = parent;
 		addMouseListener(this);
+		addMouseMotionListener(this);
 	}
 	
 	public void paint(Graphics g) {
@@ -39,8 +41,9 @@ public class LED extends JComponent implements MouseListener {
 		
 		int posX = getWidth()/4;
 		int posY = getHeight()/4;
-		
-		ellipsis = new Ellipse2D.Double(posX, posY, getWidth()*0.45, getWidth()*0.45);
+
+		int radius = (int) (getWidth()*0.5);
+		ellipsis = new Ellipse2D.Double(posX, posY, radius, radius);
 		
 		if (!enabled) {
 			g2.setPaint(new Color(255, 191, 207));
@@ -75,6 +78,18 @@ public class LED extends JComponent implements MouseListener {
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		ledpanel.mousePressed = false;
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent e) {}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		if (ellipsis.contains(e.getX(), e.getY())) {
+			setCursor(new Cursor(Cursor.HAND_CURSOR));
+		} else {
+			setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+		}
 	}
 	
 	public boolean isEnabled() {
