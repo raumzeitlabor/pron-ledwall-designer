@@ -3,6 +3,10 @@ package de.raumzeitlabor.pr0nwall.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +21,8 @@ import javax.swing.JSlider;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
+import de.raumzeitlabor.pr0nwall.ds.FrameList;
+
 public class Toolbar extends JPanel {
 
 	/**
@@ -25,8 +31,16 @@ public class Toolbar extends JPanel {
 	private static final long serialVersionUID = -6353475337784152259L;
 	private JSlider ledbrightness;
 	private JSlider duration;
+	private FrameList framelist;
+	private LEDPanel panel;
+	private FrameSeeker seeker;
+	private JPanel propertypanel;
 
-	public Toolbar() {
+	public Toolbar(LEDPanel panel, final FrameSeeker seeker) {
+		this.framelist = panel.getFrames();
+		this.seeker = seeker;
+		this.panel = panel;
+		
 		Dimension d = new Dimension(220, 0);
 		setPreferredSize(d);
 		setMinimumSize(d);
@@ -47,6 +61,19 @@ public class Toolbar extends JPanel {
 		add(header, BorderLayout.NORTH);
 		
 		JPanel mainpanel = new JPanel();
+		
+		/*
+		 * Properties
+		 */
+		JPanel properties = new JPanel();
+		properties.setBorder(new TitledBorder(
+				BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY), "LED Brightness"));
+		propertypanel = new JPanel(new GridLayout(5, 2));
+		propertypanel.add(new JLabel("Number of Frames"));
+		propertypanel.add(new JLabel("1337"));
+		properties.add(propertypanel);
+		
+		mainpanel.add(properties);
 		
 		/*
 		 * LED settings
@@ -92,8 +119,24 @@ public class Toolbar extends JPanel {
 				BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY), "Frames"));
 		
 		JButton newframebtn = new JButton("New");
+		newframebtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				framelist.addFrame(seeker.getValue() + 1);
+				seeker.refresh();
+			}
+		});
+		
 		JButton playanimbtn = new JButton("Play");
+		
 		JButton delframebtn = new JButton("Del");
+		delframebtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				framelist.deleteFrame(seeker.getValue()-1);
+				seeker.refresh();
+			}
+		});
 		
 		framecontrol.add(newframebtn);
 		framecontrol.add(playanimbtn);

@@ -2,12 +2,12 @@ package de.raumzeitlabor.pr0nwall.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Frame;
-import java.util.ArrayList;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
+
+import de.raumzeitlabor.pr0nwall.ds.FrameList;
 
 public class MainFrame extends JFrame {
 
@@ -32,6 +32,7 @@ public class MainFrame extends JFrame {
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setSize(new Dimension(FRAME_WIDTH, FRAME_HEIGHT));
+		setMinimumSize(new Dimension(300, 200));
 		setLayout(new BorderLayout());
 		
 		try {
@@ -48,17 +49,17 @@ public class MainFrame extends JFrame {
 		JPanel mainpanel = new JPanel();
 		mainpanel.setLayout(new BorderLayout());
 		
-		ArrayList<Frame> framelist = new ArrayList<Frame>();
-		framelist.add(new Frame());
+		FrameList framelist = new FrameList(32*32, 5);
 		
 		ledpanel = new LEDPanel(framelist);
-		frameseeker = new FrameSeeker(framelist);
+		frameseeker = new FrameSeeker(ledpanel);
+		ledpanel.setFrameSeeker(frameseeker);
 		
 		mainpanel.add(ledpanel, BorderLayout.CENTER);
 		mainpanel.add(frameseeker, BorderLayout.SOUTH);
 		add(mainpanel);
 		
-		toolbar = new Toolbar();
+		toolbar = new Toolbar(ledpanel, frameseeker);
 		add(toolbar, BorderLayout.EAST);
 		
 //		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
