@@ -7,13 +7,14 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Shape;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.Rectangle2D;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -24,7 +25,7 @@ import de.raumzeitlabor.pr0nwall.ds.Frame;
 import de.raumzeitlabor.pr0nwall.ds.FrameList;
 import de.raumzeitlabor.pr0nwall.ds.LED;
 
-public class LEDPanel extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener {
+public class LEDPanel extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener, KeyListener {
 
 	/**
 	 * 
@@ -39,16 +40,29 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 	
 	private final Color C_LED_ENABLED = Color.RED;
 	private final Color C_LED_DISABLED = new Color(255, 191, 207);
+	private final int PANEL_WIDTH;
 	
-	private int dragLedPos = -1;
+	private int[] shapeState;
+	private boolean partialRedraw = false;
+	
+	private int currentLedCursor = 1;
 	
 	public LEDPanel(FrameList framelist) {
-		this.helper = new PositioningHelper((int) Math.sqrt(framelist.getDots()));
+		this.PANEL_WIDTH = (int) Math.sqrt(framelist.getDots());
+		this.helper = new PositioningHelper(PANEL_WIDTH);
 		this.framelist = framelist;
+		
+		this.shapeState = new int[framelist.getDots() / 32];
+		for (int i = 0; i < shapeState.length; i++) { 
+			shapeState[i] = 0xFFFFFFFF;
+		}
 
 		addMouseListener(this);
 		addMouseWheelListener(this);
 		addMouseMotionListener(this);
+		
+		setFocusable(true);
+		addKeyListener(this);
 		
 		setBackground(Color.WHITE);
 		setBorder(new CompoundBorder(BorderFactory.createMatteBorder(
@@ -58,6 +72,40 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 	
 	public void setFrameSeeker(FrameSeeker seeker) {
 		this.seeker = seeker;
+	}
+	
+	private void setShapeState(int pos, boolean state) {
+		int arrayPos = (int) (pos / 32);
+		int bytePos  = pos % 32;
+		
+		int current = shapeState[arrayPos];
+		int toStore = 1 << (31 - bytePos);
+		
+//		System.out.println("current: "+Integer.toBinaryString(current));
+		
+		if (state) {
+			shapeState[arrayPos] = toStore ^ current;
+//			System.out.println("tostore: "+Integer.toBinaryString(toStore));
+//			System.out.println("     AND "+Integer.toBinaryString(toStore ^ current));
+		} else {
+			shapeState[arrayPos] = ~toStore & current;
+//			System.out.println("tostore: "+Integer.toBinaryString(~toStore));
+//			System.out.println("      OR "+Integer.toBinaryString(~toStore & current));
+		}
+		
+//		System.out.println("result:  "+Integer.toBinaryString(shapeState[arrayPos]));
+//		System.out.println();
+	}
+	
+	private boolean getShapeState(int pos) {
+		int arrayPos = (int) (pos / 32);
+		int bytePos  = pos % 32;
+		
+		int current = shapeState[arrayPos];
+		
+//		System.out.println("GET bit: "+Integer.toBinaryString(current >>> (31 - bytePos)));
+		
+		return (current >>> (31 - bytePos)) == 1;
 	}
 	
 	@Override
@@ -73,24 +121,35 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		
 		helper.update(width, height);
 		double led_size = helper.getLEDSize();
-		
+
+		int j = 0;
 		for (int i = 0; i < framelist.getDots(); i++) {
 			Point p = helper.getLEDPosition(i);
-						
-			Shape shape = new Ellipse2D.Double(p.getX(), p.getY(), led_size, led_size);
-			getLED(i).setShape(shape);
-			
-			if (!getLED(i).isEnabled())
-				g2.setPaint(C_LED_DISABLED);
-			else
-				g2.setPaint(C_LED_ENABLED);
-			
-			g2.fill(shape);
-			g2.setPaint(Color.GRAY);
-			g2.draw(shape);
-			
+//			System.out.println("led is enabled: "+getLED(i).isEnabled());
+//			System.out.println("shape state: "+getShapeState(i));
+//			if (partialRedraw == false || getLED(i).isEnabled() != getShapeState(i)) {
+				j++;
+				Shape shape = new Ellipse2D.Double(p.getX(), p.getY(), led_size, led_size);
+				
+				g2.setPaint(getLED(i).isEnabled() ? C_LED_ENABLED : C_LED_DISABLED);
+				setShapeState(i, getLED(i).isEnabled());
+				
+				g2.fill(shape);
+				
+				if (currentLedCursor - 1 == i) {
+					g2.setPaint(Color.BLACK);
+				} else {
+					g2.setPaint(Color.GRAY);
+				}
+				
+				g2.draw(shape);
+//			}
+				
 //			g2.drawOval((int)posX, (int)posY, (int)led_size, (int) led_size);
 		}
+		
+		partialRedraw = false;
+//		System.out.println("redraw "+j+" leds");
 	}
 
 	public FrameList getFrames() {
@@ -113,6 +172,7 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		if (current_frame > 0) {
 			current_frame--;
 			repaint();
+			partialRedraw = true;
 		}
 	}
 	
@@ -120,6 +180,7 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		if (current_frame < framelist.getFrames().size() - 1) {
 			current_frame++;
 			repaint();
+			partialRedraw = true;
 		}
 	}
 	
@@ -127,6 +188,7 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		if (i > 0 && i <= framelist.getFrames().size()) { 
 			current_frame = i - 1;
 			repaint();
+			partialRedraw = true;
 		}
 	}
 	
@@ -143,12 +205,19 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		int ledNo = helper.getLEDNumber(e.getPoint());
 		
 		if (ledNo != -1) {
+			
 			LED l = getLED(ledNo);
-			Shape s = l.getShape();
+			Point p = helper.getLEDPosition(ledNo);
+
+			double led_size = helper.getLEDSize();
+			Shape s = new Ellipse2D.Double(p.getX(), p.getY(), led_size, led_size);
+			
 			if (s.contains(e.getPoint())) {
-				l.toggleEnabled();
+				setShapeState(ledNo, l.toggleEnabled());
+				
 				g2.setColor(l.isEnabled() ? C_LED_ENABLED : C_LED_DISABLED);
 				g2.fill(s);
+				
 				g2.setPaint(Color.GRAY);
 				g2.draw(s);
 			}
@@ -174,6 +243,7 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		if (newVal >= 1 && newVal <= getNumberOfFrames()) {
 			seekToFrame(newVal);
 			seeker.refresh();
+			seeker.setValue(newVal);
 		}
 	}
 	
@@ -182,9 +252,9 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		int ledPos = helper.getLEDNumber(e.getPoint());
 		
 //		if (dragLedPos != ledPos) {
-			dragLedPos = ledPos;
+//			dragLedPos = ledPos;
 			mouseClicked(e);
-//		}
+////		}
 	}
 
 	@Override
@@ -192,7 +262,11 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 		int ledNo = helper.getLEDNumber(e.getX(), e.getY());
 		
 		if (ledNo != -1) {
-			if (getLED(ledNo).getShape().contains(e.getPoint())) {
+			Point p = helper.getLEDPosition(ledNo);
+			double led_size = helper.getLEDSize();
+			
+			Shape s = new Ellipse2D.Double(p.getX(), p.getY(), led_size, led_size);
+			if (s.contains(e.getPoint())) {
 				setCursor(new Cursor(Cursor.HAND_CURSOR));
 				return;
 			}
@@ -277,4 +351,70 @@ public class LEDPanel extends JPanel implements MouseListener, MouseMotionListen
 			return ledSize;
 		}
 	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		int oldLedCursor = currentLedCursor;
+		
+		switch (e.getKeyCode()) {
+		case 37: // LEFT-ARROW
+			if (currentLedCursor % PANEL_WIDTH > 1) {
+				currentLedCursor--;
+			}
+			break;
+		case 38: // UP-ARROW
+			if (currentLedCursor > PANEL_WIDTH) {
+				currentLedCursor -= PANEL_WIDTH;
+			}
+			break;
+		case 39: // RIGHT-ARROW
+			if (currentLedCursor % PANEL_WIDTH < PANEL_WIDTH) {
+				currentLedCursor++;
+			}
+			break;
+		case 40: // DOWN-ARROW
+			if (currentLedCursor < (PANEL_WIDTH - 1) * PANEL_WIDTH) {
+				currentLedCursor += PANEL_WIDTH;
+			}
+			break;
+		case 32:
+			getLED(currentLedCursor).toggleEnabled();
+			selectLed(currentLedCursor, true);
+			break;
+		}
+		
+		if (e.getKeyCode() >= 37 && e.getKeyCode() <= 40) {
+			selectLed(oldLedCursor, false);
+			selectLed(currentLedCursor, true);
+		}
+	}
+
+	private void selectLed(int ledNo, boolean b) {
+		Graphics2D g2 = (Graphics2D) getGraphics();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		
+		LED l = getLED(ledNo);
+		Point p = helper.getLEDPosition(ledNo);
+
+		double led_size = helper.getLEDSize();
+		Shape s = new Ellipse2D.Double(p.getX(), p.getY(), led_size, led_size);
+			
+		g2.setColor(l.isEnabled() ? C_LED_ENABLED : C_LED_DISABLED);
+		g2.fill(s);
+			
+		if (b) {
+			g2.setPaint(Color.BLACK);
+		} else {
+			g2.setPaint(Color.GRAY);
+		}
+		
+		g2.draw(s);
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {}
+
+	@Override
+	public void keyTyped(KeyEvent e) {}
 }

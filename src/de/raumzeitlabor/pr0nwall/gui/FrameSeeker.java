@@ -8,10 +8,12 @@ import javax.swing.BorderFactory;
 import javax.swing.JSlider;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import de.raumzeitlabor.pr0nwall.ds.FrameList;
 
-public class FrameSeeker extends JSlider implements MouseWheelListener {
+public class FrameSeeker extends JSlider implements MouseWheelListener, ChangeListener {
 
 	/**
 	 * 
@@ -21,7 +23,7 @@ public class FrameSeeker extends JSlider implements MouseWheelListener {
 	private LEDPanel panel;
 
 	public FrameSeeker(LEDPanel panel) {
-		setMajorTickSpacing(5);
+		setMajorTickSpacing(1);
 		setMinorTickSpacing(1);
 		setSnapToTicks(true);
 		setPaintTicks(true);
@@ -35,22 +37,24 @@ public class FrameSeeker extends JSlider implements MouseWheelListener {
                 new EmptyBorder(5, 10, 5, 10)));
 		
 		addMouseWheelListener(this);
+		addChangeListener(this);
 		
 		this.panel = panel;
 	}
 
 	public void refresh() {
-		setValue(panel.getCurrentFrameNumber());
 		setMaximum(panel.getNumberOfFrames());
 	}
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent e) {
 		int newVal = getValue() + e.getWheelRotation();
-		
-		if (newVal >= 1 && newVal <= panel.getNumberOfFrames()) {
-			panel.seekToFrame(newVal);
-			refresh();
-		}
+		panel.seekToFrame(newVal);
+	}
+
+	@Override
+	public void stateChanged(ChangeEvent arg0) {
+		int newVal = getValue();
+		panel.seekToFrame(newVal);
 	}
 }

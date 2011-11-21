@@ -3,10 +3,11 @@ package de.raumzeitlabor.pr0nwall.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -29,14 +30,14 @@ public class Toolbar extends JPanel {
 	 * 
 	 */
 	private static final long serialVersionUID = -6353475337784152259L;
-	private JSlider ledbrightness;
-	private JSlider duration;
-	private FrameList framelist;
-	private LEDPanel panel;
-	private FrameSeeker seeker;
-	private JPanel propertypanel;
+	private final JSlider ledbrightness;
+	private final JSlider duration;
+	private final FrameList framelist;
+	private final LEDPanel panel;
+	private final FrameSeeker seeker;
+	private final JPanel propertypanel;
 
-	public Toolbar(LEDPanel panel, final FrameSeeker seeker) {
+	public Toolbar(final LEDPanel panel, final FrameSeeker seeker) {
 		this.framelist = panel.getFrames();
 		this.seeker = seeker;
 		this.panel = panel;
@@ -67,7 +68,7 @@ public class Toolbar extends JPanel {
 		 */
 		JPanel properties = new JPanel();
 		properties.setBorder(new TitledBorder(
-				BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY), "LED Brightness"));
+				BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY), "Properties"));
 		propertypanel = new JPanel(new GridLayout(5, 2));
 		propertypanel.add(new JLabel("Number of Frames"));
 		propertypanel.add(new JLabel("1337"));
@@ -123,7 +124,9 @@ public class Toolbar extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				framelist.addFrame(seeker.getValue() + 1);
+				panel.seekToFrame(seeker.getValue() + 1);				
 				seeker.refresh();
+				seeker.setValue(seeker.getValue() + 1);
 			}
 		});
 		
@@ -133,7 +136,9 @@ public class Toolbar extends JPanel {
 		delframebtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				framelist.deleteFrame(seeker.getValue()-1);
+				if (framelist.getFrames().size() == 1) return;
+				framelist.deleteFrame(seeker.getValue() - 1);
+				panel.seekToFrame(seeker.getValue() - 2);
 				seeker.refresh();
 			}
 		});

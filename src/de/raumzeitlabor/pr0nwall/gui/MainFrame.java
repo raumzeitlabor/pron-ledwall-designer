@@ -49,7 +49,7 @@ public class MainFrame extends JFrame {
 		JPanel mainpanel = new JPanel();
 		mainpanel.setLayout(new BorderLayout());
 		
-		FrameList framelist = new FrameList(32*32, 5);
+		FrameList framelist = new FrameList(32*32, 1);
 		
 		ledpanel = new LEDPanel(framelist);
 		frameseeker = new FrameSeeker(ledpanel);

@@ -5,7 +5,6 @@ import java.awt.Shape;
 
 public class LED {
 	private boolean enabled = false;
-	private Shape shape;
 
 	public boolean isEnabled() {
 		return enabled;
@@ -15,19 +14,8 @@ public class LED {
 		this.enabled = enabled;
 	}
 	
-	public void toggleEnabled() {
+	public boolean toggleEnabled() {
 		this.enabled = !this.enabled;
-	}
-
-	public boolean hasShape() {
-		return shape != null;
-	}
-
-	public void setShape(Shape s) {
-		this.shape = s;
-	}
-
-	public Shape getShape() {
-		return shape;
+		return this.enabled;
 	}
 }
